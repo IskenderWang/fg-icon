@@ -1,6 +1,6 @@
 # fg-icon
 
-FlightGear icon for MacOS which improves on the original I had introduced by better aligning with the app icon style guidelines. Of course, I used no design kits provided by Apple (as that would probably lead to licensing trouble) other than to get a sense of how it should look. Created entirely with the help of Inkscape, my CLI, and the guidelines, as listed below.
+FlightGear icon for MacOS which improves on the original we had introduced (big up Michael Danilov for that) by better aligning with the app icon style guidelines. Of course, I used no design kits provided by Apple (as that would probably lead to licensing trouble) other than to get a sense of how it should look. Created entirely with the help of Inkscape, my CLI, and the guidelines, as listed below.
 
 ## Sources
 
