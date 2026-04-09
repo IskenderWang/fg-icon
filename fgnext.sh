@@ -7,16 +7,23 @@ INSTALL_DIR="$HOME/flightgear"
 CURRENT_VER="$INSTALL_DIR/fg_nightly.txt"
 NIGHTLY_URL="https://www.flightgear.org/download/nightly/"
 MOUNT_POINT="/Volumes/FlightGear"
-FG_ROOT="${FG_ROOT:-$INSTALL_DIR/fgdata}"
+
+cleanup() {
+  [[ -d $MOUNT_POINT ]] && hdiutil detach "$MOUNT_POINT" -quiet
+  [[ -n $TEMP ]] && rm -r "$TEMP"
+}
 
 launch() {
   if [[ -d $FG_ROOT ]]; then
     echo "Pulling FGData..."
     (cd "$FG_ROOT" && git checkout next && git pull)
     echo "Launching..."
-    open "$INSTALL_DIR/FlightGear.app" && return 0 || return 1
+    open "$INSTALL_DIR/FlightGear.app"
+    return 0
   else
-    echo "Error: Could not find FGData at $FG_ROOT." >&2
+    # shellcheck disable=SC2016
+    [[ -z $FG_ROOT ]] && echo 'Error: $FG_ROOT is not set.' >&2 ||
+      echo "Error: Could not find FGData at $FG_ROOT." >&2
     return 1
   fi
 }
@@ -38,33 +45,25 @@ fi
 
 echo "Downloading $DMG_NAME..."
 TEMP=$(mktemp -d)
-MOUNTED=false
-
-cleanup() {
-  $MOUNTED && hdiutil detach "$MOUNT_POINT" -quiet
-  rm -rf "$TEMP"
-}
-
 trap cleanup EXIT
 curl -fL --progress-bar -o "$TEMP/$DMG_NAME" "$DMG_URL"
 
 echo "Mounting DMG..."
 hdiutil attach "$TEMP/$DMG_NAME" -mountpoint "$MOUNT_POINT" -nobrowse -quiet
-MOUNTED=true
-
-# As this is mac we can use trash and ditto, typically we would use rm and cp (with the proper options) for this
-[[ -d "$INSTALL_DIR/FlightGear.app" ]] && trash "$INSTALL_DIR/FlightGear.app"
 
 if [[ ! -d "$MOUNT_POINT/FlightGear.app" ]]; then
   echo "Error: FlightGear.app not found on mounted DMG." >&2
   exit 1
 fi
 
+# As this is mac we can use trash and ditto, typically we would use rm and cp (with the proper options) for this
+[[ -d "$INSTALL_DIR/FlightGear.app" ]] && trash "$INSTALL_DIR/FlightGear.app"
+
 echo "Installing FlightGear..."
 ditto "$MOUNT_POINT/FlightGear.app" "$INSTALL_DIR/FlightGear.app"
 
+# Update the current version file now that installation is complete
 echo "$DMG_NAME" >"$CURRENT_VER"
-echo "Installed: $DMG_NAME"
 
-launch
-echo "Cleaning up..."
+echo "Installed: $DMG_NAME"
+launch && echo "Cleaning up..."
