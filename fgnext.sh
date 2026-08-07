@@ -6,15 +6,16 @@ set -euo pipefail
 INSTALL_DIR="$HOME/flightgear"
 CURRENT_VER="$INSTALL_DIR/fg_nightly.txt"
 NIGHTLY_URL="https://www.flightgear.org/download/nightly/"
-MOUNT_POINT="/Volumes/FlightGear"
 
 cleanup() {
-  [[ -d $MOUNT_POINT ]] && hdiutil detach "$MOUNT_POINT" -quiet
-  [[ -n $TEMP ]] && rm -r "$TEMP"
+  # Detach before removing TEMP, since the DMG is mounted inside it
+  [[ -d ${MOUNT_POINT:-} ]] &&
+    { hdiutil detach "$MOUNT_POINT" -quiet || hdiutil detach "$MOUNT_POINT" -force -quiet; }
+  [[ -n ${TEMP:-} ]] && rm -r "$TEMP"
 }
 
 launch() {
-  if [[ -d $FG_ROOT ]]; then
+  if [[ -d ${FG_ROOT:-} ]]; then
     echo "Pulling FGData..."
     (cd "$FG_ROOT" && git checkout next && git pull)
     echo "Launching..."
@@ -22,11 +23,13 @@ launch() {
     return 0
   else
     # shellcheck disable=SC2016
-    [[ -z $FG_ROOT ]] && echo 'Error: $FG_ROOT is not set.' >&2 ||
+    [[ -z ${FG_ROOT:-} ]] && echo 'Error: $FG_ROOT is not set.' >&2 ||
       echo "Error: Could not find FGData at $FG_ROOT." >&2
     return 1
   fi
 }
+
+mkdir -p "$INSTALL_DIR"
 
 echo "Checking for latest nightly..." # Since only one .dmg URL this works fine
 DMG_URL=$(curl -s "$NIGHTLY_URL" | grep -o 'https://gitlab\.com[^"]*\.dmg')
@@ -45,6 +48,7 @@ fi
 
 echo "Downloading $DMG_NAME..."
 TEMP=$(mktemp -d)
+MOUNT_POINT="$TEMP/mnt" # Private mountpoint, so a stray /Volumes/FlightGear can't clash
 trap cleanup EXIT
 curl -fL --progress-bar -o "$TEMP/$DMG_NAME" "$DMG_URL"
 
