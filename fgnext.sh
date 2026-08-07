@@ -9,12 +9,22 @@ NIGHTLY_URL="https://www.flightgear.org/download/nightly/"
 
 cleanup() {
   # Detach before removing TEMP, since the DMG is mounted inside it
-  [[ -d ${MOUNT_POINT:-} ]] &&
-    { hdiutil detach "$MOUNT_POINT" -quiet || hdiutil detach "$MOUNT_POINT" -force -quiet; }
+  echo "Cleaning up..."
+  if [[ -d ${MOUNT_POINT:-} ]]; then
+    if ! hdiutil detach "$MOUNT_POINT" -quiet &&
+      ! hdiutil detach "$MOUNT_POINT" -force -quiet; then
+      # Removing TEMP now would pull the .dmg out from under a live mount
+      echo "Warning: could not unmount $MOUNT_POINT; leaving $TEMP behind." >&2
+      return 0
+    fi
+  fi
+  # We knew that TEMP was set if MOUNT_POINT was, but now we also check TEMP
   [[ -n ${TEMP:-} ]] && rm -r "$TEMP"
+  return 0
 }
 
 launch() {
+  # Assumes $FG_ROOT is set, handles error otherwise
   if [[ -d ${FG_ROOT:-} ]]; then
     echo "Pulling FGData..."
     (cd "$FG_ROOT" && git checkout next && git pull)
@@ -29,8 +39,6 @@ launch() {
   fi
 }
 
-mkdir -p "$INSTALL_DIR"
-
 echo "Checking for latest nightly..." # Since only one .dmg URL this works fine
 DMG_URL=$(curl -s "$NIGHTLY_URL" | grep -o 'https://gitlab\.com[^"]*\.dmg')
 
@@ -39,17 +47,20 @@ if [[ -z $DMG_URL ]]; then
   exit 1
 fi
 
+mkdir -p "$INSTALL_DIR" # Not depending on assumption it exists already
 DMG_NAME=$(basename "$DMG_URL")
 
 if [[ -f $CURRENT_VER ]] && [[ "$(cat "$CURRENT_VER")" == "$DMG_NAME" ]]; then
   echo "Already up to date: $DMG_NAME"
-  launch && exit 0 || exit 1
+  launch
+  exit $?
 fi
 
-echo "Downloading $DMG_NAME..."
 TEMP=$(mktemp -d)
-MOUNT_POINT="$TEMP/mnt" # Private mountpoint, so a stray /Volumes/FlightGear can't clash
+MOUNT_POINT="$TEMP/mnt" # Create private mountpoint
 trap cleanup EXIT
+
+echo "Downloading $DMG_NAME..."
 curl -fL --progress-bar -o "$TEMP/$DMG_NAME" "$DMG_URL"
 
 echo "Mounting DMG..."
@@ -70,4 +81,4 @@ ditto "$MOUNT_POINT/FlightGear.app" "$INSTALL_DIR/FlightGear.app"
 echo "$DMG_NAME" >"$CURRENT_VER"
 
 echo "Installed: $DMG_NAME"
-launch && echo "Cleaning up..."
+launch
