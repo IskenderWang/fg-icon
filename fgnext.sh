@@ -19,7 +19,7 @@ cleanup() {
     fi
   fi
   # We knew that TEMP was set if MOUNT_POINT was, but now we also check TEMP
-  [[ -n ${TEMP:-} ]] && rm -r "$TEMP"
+  [[ -d ${TEMP:-} ]] && rm -r "$TEMP"
   return 0
 }
 
