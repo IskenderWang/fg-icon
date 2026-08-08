@@ -53,7 +53,7 @@ DMG_NAME=$(basename "$DMG_URL")
 if [[ -f $CURRENT_VER ]] && [[ "$(cat "$CURRENT_VER")" == "$DMG_NAME" ]]; then
   echo "Already up to date: $DMG_NAME"
   launch
-  exit $?
+  exit
 fi
 
 TEMP=$(mktemp -d)
