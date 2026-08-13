@@ -56,7 +56,6 @@ fi
 mkdir -p "$INSTALL_DIR" # Not depending on assumption it exists already
 DMG_NAME=$(basename "$DMG_URL")
 
-# Also check the app itself, in case it was moved or trashed by hand
 if [[ -f $CURRENT_VER ]] && [[ "$(cat "$CURRENT_VER")" == "$DMG_NAME" ]] &&
   [[ -d "$INSTALL_DIR/FlightGear.app" ]]; then
   echo "Already up to date: $DMG_NAME"
