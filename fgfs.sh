@@ -14,7 +14,6 @@ if [[ ! -d ${FG_ROOT:-} ]]; then
 fi
 
 echo "Pulling FGData..."
-# A dirty tree or no network shouldn't stop us flying on slightly stale data
 if ! (cd "$FG_ROOT" && git checkout "$BRANCH" && git pull); then
   echo "Warning: could not update FGData; launching with the current tree." >&2
 fi

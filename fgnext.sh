@@ -27,7 +27,6 @@ launch() {
   # Assumes $FG_ROOT is set, handles error otherwise
   if [[ -d ${FG_ROOT:-} ]]; then
     echo "Pulling FGData..."
-    # A dirty tree or no network shouldn't stop us flying on slightly stale data
     if ! (cd "$FG_ROOT" && git checkout next && git pull); then
       echo "Warning: could not update FGData; launching with the current tree." >&2
     fi
