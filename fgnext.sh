@@ -27,7 +27,10 @@ launch() {
   # Assumes $FG_ROOT is set, handles error otherwise
   if [[ -d ${FG_ROOT:-} ]]; then
     echo "Pulling FGData..."
-    (cd "$FG_ROOT" && git checkout next && git pull)
+    # A dirty tree or no network shouldn't stop us flying on slightly stale data
+    if ! (cd "$FG_ROOT" && git checkout next && git pull); then
+      echo "Warning: could not update FGData; launching with the current tree." >&2
+    fi
     echo "Launching..."
     open "$INSTALL_DIR/FlightGear.app"
     return 0
@@ -39,8 +42,11 @@ launch() {
   fi
 }
 
-echo "Checking for latest nightly..." # Since only one .dmg URL this works fine
-DMG_URL=$(curl -s "$NIGHTLY_URL" | grep -o 'https://gitlab\.com[^"]*\.dmg')
+echo "Checking for latest nightly..." # Since only one .dmg URL grep works fine
+# head -n1 in case a second link appears, || true so a no-match reaches the
+# check below instead of tripping set -e with no message
+DMG_URL=$(curl -fsSL "$NIGHTLY_URL" | grep -o 'https://gitlab\.com[^"]*\.dmg' |
+  head -n1) || true
 
 if [[ -z $DMG_URL ]]; then
   echo "Error: Could not find .dmg URL on nightly page." >&2
@@ -50,7 +56,9 @@ fi
 mkdir -p "$INSTALL_DIR" # Not depending on assumption it exists already
 DMG_NAME=$(basename "$DMG_URL")
 
-if [[ -f $CURRENT_VER ]] && [[ "$(cat "$CURRENT_VER")" == "$DMG_NAME" ]]; then
+# Also check the app itself, in case it was moved or trashed by hand
+if [[ -f $CURRENT_VER ]] && [[ "$(cat "$CURRENT_VER")" == "$DMG_NAME" ]] &&
+  [[ -d "$INSTALL_DIR/FlightGear.app" ]]; then
   echo "Already up to date: $DMG_NAME"
   launch
   exit
