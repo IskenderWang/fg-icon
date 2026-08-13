@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
-
+#
+# Runs the stable FlightGear release on macOS against matching FGData
 set -euo pipefail
-(cd "$FG_ROOT" && git checkout release/2024.1 && git pull)
-open /Applications/FlightGear.app
+
+APP="/Applications/FlightGear.app"
+BRANCH="release/2024.1" # Bump alongside the installed release
+
+if [[ ! -d ${FG_ROOT:-} ]]; then
+  # shellcheck disable=SC2016
+  [[ -z ${FG_ROOT:-} ]] && echo 'Error: $FG_ROOT is not set.' >&2 ||
+    echo "Error: Could not find FGData at $FG_ROOT." >&2
+  exit 1
+fi
+
+echo "Pulling FGData..."
+# A dirty tree or no network shouldn't stop us flying on slightly stale data
+if ! (cd "$FG_ROOT" && git checkout "$BRANCH" && git pull); then
+  echo "Warning: could not update FGData; launching with the current tree." >&2
+fi
+
+echo "Launching..."
+open "$APP"
