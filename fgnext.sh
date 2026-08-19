@@ -41,11 +41,11 @@ launch() {
   fi
 }
 
-echo "Checking for latest nightly..." # Since only one .dmg URL grep works fine
+echo "Checking for latest nightly..." # Should be only one .dmg URL on page
 # head -n1 in case a second link appears, || true so a no-match reaches the
 # check below instead of tripping set -e with no message
 DMG_URL=$(curl -fsSL "$NIGHTLY_URL" | grep -o 'https://gitlab\.com[^"]*\.dmg' |
-  head -n1) || true
+  head -n 1) || true
 
 if [[ -z $DMG_URL ]]; then
   echo "Error: Could not find .dmg URL on nightly page." >&2
